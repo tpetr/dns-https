@@ -2,7 +2,6 @@ package main
 
 import (
 	"bytes"
-	"flag"
 	"fmt"
 	"github.com/miekg/dns"
 	"github.com/sirupsen/logrus"
@@ -58,7 +57,7 @@ func main() {
 	httpClient := http.Client{Timeout: httpTimeout}
 	rand.Seed(time.Now().UTC().UnixNano())
 
-	upstreams := flag.Args()
+	upstreams := pflag.Args()
 
 	if len(upstreams) == 0 {
 		rootLogger.Fatal("Must include at least one upstream")
