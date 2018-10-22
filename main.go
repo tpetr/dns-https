@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/miekg/dns"
 	"github.com/sirupsen/logrus"
+	"github.com/spf13/pflag"
 	"io"
 	"math/rand"
 	"net"
@@ -33,23 +34,31 @@ func buildHostSet(urls []string) (map[string]bool, error) {
 	return hosts, nil
 }
 
+var listenAddr string
+var httpTimeout time.Duration
+var fallback string
+var verbose bool
+
+func init() {
+	pflag.StringVarP(&listenAddr, "listen", "l", ":10053", "address to listen on")
+	pflag.DurationVarP(&httpTimeout, "timeout", "t", 5*time.Second, "HTTP timeout")
+	pflag.StringVarP(&fallback, "fallback", "f", "1.1.1.1:53", "fallback DNS address for resolving upstreams")
+	pflag.BoolVarP(&verbose, "verbose", "v", false, "enable verbose logging")
+}
+
 func main() {
-	httpClient := http.Client{}
-	rand.Seed(time.Now().UTC().UnixNano())
-
-	listen := flag.String("listen", ":10053", "address to listen on")
-	flag.DurationVar(&httpClient.Timeout, "http-timeout", 5*time.Second, "HTTP timeout")
-	fallback := flag.String("fallback", "1.1.1.1:53", "fallback DNS address to resolve the HTTPS upstreams")
-	verbose := flag.Bool("verbose", false, "verbose logging")
-	flag.Parse()
-
-	upstreams := flag.Args()
+	pflag.Parse()
 
 	rootLogger := logrus.New()
 	rootLogger.SetFormatter(&logrus.TextFormatter{FullTimestamp: true})
-	if *verbose {
+	if verbose {
 		rootLogger.SetLevel(logrus.DebugLevel)
 	}
+
+	httpClient := http.Client{Timeout: httpTimeout}
+	rand.Seed(time.Now().UTC().UnixNano())
+
+	upstreams := flag.Args()
 
 	if len(upstreams) == 0 {
 		rootLogger.Fatal("Must include at least one upstream")
@@ -63,7 +72,7 @@ func main() {
 	proxy := func(w dns.ResponseWriter, r *dns.Msg) (*logrus.Entry, error) {
 		questionName := r.Question[0].Name
 
-		log := rootLogger.WithField("Id", r.Id).WithField("Question", r.Question[0].Name)
+		log := rootLogger.WithField("Id", r.Id).WithField("Domain", r.Question[0].Name)
 
 		msg, err := r.Pack()
 		if err != nil {
@@ -73,9 +82,9 @@ func main() {
 		reader := bytes.NewReader(msg)
 
 		if upstreamHosts[questionName] {
-			log = log.WithField("upstream", *fallback)
+			log = log.WithField("upstream", fallback)
 
-			conn, netErr := net.Dial("udp", *fallback)
+			conn, netErr := net.Dial("udp", fallback)
 			defer conn.Close()
 			if netErr != nil {
 				return log, netErr
@@ -129,11 +138,11 @@ func main() {
 
 	server := dns.Server{
 		Net:  "udp",
-		Addr: *listen,
+		Addr: listenAddr,
 	}
 
 	rootLogger.Infof("Proxying to %v URL(s) with a %v timeout", len(upstreams), httpClient.Timeout)
-	rootLogger.Infof("Listening on %v", *listen)
+	rootLogger.Infof("Listening on %v", listenAddr)
 	if err := server.ListenAndServe(); err != nil {
 		rootLogger.Fatal(err)
 	}
