@@ -1,6 +1,6 @@
 # dns-https
 
-A simple [DNS-over-HTTPS](https://en.wikipedia.org/wiki/DNS_over_HTTPS) proxy.
+A simple [DNS-over-HTTPS](https://en.wikipedia.org/wiki/DNS_over_HTTPS) proxy written in Go.
 
 ## Installation
 
@@ -21,7 +21,7 @@ Usage of dns-https:
 ## Example
 
 ```bash
-sudo dns-https -v -l 127.0.0.1:53 https://dns.quad9.net/dns-query ttps://cloudflare-dns.com/dns-query
+sudo dns-https -v -l 127.0.0.1:53 https://dns.quad9.net/dns-query https://cloudflare-dns.com/dns-query
 ```
 
 This command configures `dns-https` listen locally on the standard DNS port (53, hence `sudo`) and randomly proxy DNS requests to [Quad9](https://www.quad9.net/doh-quad9-dns-servers/) or [Cloudflare's](https://developers.cloudflare.com/1.1.1.1/dns-over-https/) DNS-over-HTTPS endpoints.
