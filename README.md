@@ -18,10 +18,18 @@ Usage of dns-https:
   -v, --verbose            enable verbose logging
 ```
 
-Example:
+## Example
 
 ```bash
-sudo dns-https -l 127.0.0.1:53 https://9.9.9.9/dns-query https://cloudflare-dns.com/dns-query
+sudo dns-https -v -l 127.0.0.1:53 https://dns.quad9.net/dns-query ttps://cloudflare-dns.com/dns-query
 ```
 
-This command makes `dns-https` listen locally on the DNS port (53, hence `sudo`) and randomly proxy DNS requests to Quad9 or Cloudflare's DNS-over-HTTPS endpoints. To make your computer use `dns-https`, set your DNS server to `127.0.0.1`.
+This command configures `dns-https` listen locally on the standard DNS port (53, hence `sudo`) and randomly proxy DNS requests to [Quad9](https://www.quad9.net/doh-quad9-dns-servers/) or [Cloudflare's](https://developers.cloudflare.com/1.1.1.1/dns-over-https/) DNS-over-HTTPS endpoints.
+
+To test this out, run `dig google.com @127.0.0.1` in another terminal window. You should see output like this from `dns-https`:
+
+```
+INFO[2018-10-22T13:15:45-04:00] Proxying to 2 URL(s) with a 5s timeout
+INFO[2018-10-22T13:15:45-04:00] Listening on 127.0.0.1:53
+DEBU[2018-10-22T13:16:39-04:00] Proxied in 209ms                              Domain=google.com. Id=33104 upstream="https://cloudflare-dns.com/dns-query"
+```
